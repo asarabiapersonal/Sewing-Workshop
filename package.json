@@ -1,0 +1,13 @@
+{
+  "name": "sewing-workshop",
+  "version": "1.0.0",
+  "description": "3D sewing machine training simulator: Singer M1500 model, threading, fabric and stitch practice",
+  "type": "module",
+  "scripts": {
+    "test": "node test/stitches.test.mjs && node test/exercises.test.mjs"
+  },
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "three": "^0.187.0"
+  }
+}

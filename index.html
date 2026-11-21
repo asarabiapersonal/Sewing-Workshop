@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sewing Workshop: Singer M1500</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": {
+        "three": "./node_modules/three/build/three.module.js",
+        "three/addons/": "./node_modules/three/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+<div id="err"></div>
+<div id="toast"></div>
+<div id="tip"></div>
+<div id="labels"></div>
+<button id="bClean" class="fab icon" aria-label="Hide all panels" title="Hide all panels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+<button id="panelTab" class="fab">☰ Menu</button>
+<div id="hud"><button id="hudHead" class="hhead" aria-label="Show or hide machine status">Machine status <span>▾</span></button><div id="hudRows"></div><div id="thumbs" class="thumbs" hidden></div></div>
+<aside id="panel">
+  <header><button id="bPanelClose" class="icon" aria-label="Close menu">›</button><h1>Singer M1500 workshop</h1><p>Sew tab: thread the machine, choose a fabric and practice. Parts tab: take the user parts on and off. Left-drag to orbit, middle- or right-drag to pan, scroll to zoom.</p></header>
+  <div class="tabs"><button id="tabSew" class="on">Sew</button><button id="tabParts">Parts</button></div>
+  <div id="sewTab" class="tab"></div>
+  <div id="partsTab" class="tab" hidden>
+    <div class="btns">
+      <button class="primary" id="bDis">Disassemble all</button>
+      <button id="bAsm">Reassemble</button>
+      <button id="bLbl">Part labels</button>
+      <button id="bView">Reset view</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</aside>
+<section id="info"><div id="iHead"><h3 id="iT">Singer M1500</h3><button id="bInfo" class="icon" aria-label="Collapse info">▾</button></div><div class="ref" id="iR">Built from the M1500 / M1505 instruction manual</div><div id="iP">To start sewing: click <b>Thread instantly</b> (or follow <b>Guided threading</b>), switch the power on, pick a fabric and click <b>Place fabric</b>. Lower the presser foot with F, then hold Space to sew. Click any part on the machine to learn what it does.</div><div id="iB"></div></section>
+<div id="sewbar">
+  <button id="sbSew" class="primary">Hold to sew <kbd>Space</kbd></button>
+  <button id="sbRev">Reverse <kbd>R</kbd></button>
+  <button id="sbFoot">Foot <kbd>F</kbd></button>
+  <button id="sbNeedle">Needle <kbd>N</kbd></button>
+  <span class="grp x"><button data-key="ArrowLeft" aria-label="Guide left">←</button><button data-key="ArrowUp" aria-label="Slide fabric back">↑</button><button data-key="ArrowDown" aria-label="Slide fabric forward">↓</button><button data-key="ArrowRight" aria-label="Guide right">→</button></span>
+  <span class="grp x"><button data-key="KeyQ" aria-label="Pivot left">⟲ <kbd>Q</kbd></button><button data-key="KeyE" aria-label="Pivot right">⟳ <kbd>E</kbd></button></span>
+  <label class="x">Speed <input type="range" id="sbSpeed" min="4" max="40" value="18"></label>
+  <button id="sbView" class="x">Sewing view <kbd>V</kbd></button>
+  <button id="sbSound" class="x">Sound on</button>
+  <button id="sbMore" class="icon" aria-label="More controls" title="More controls">⋯</button>
+</div>
+<script>window.addEventListener('error', e => { const d = document.getElementById('err'); d.style.display = 'block'; d.textContent = 'Error: ' + (e.message || e); });</script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
