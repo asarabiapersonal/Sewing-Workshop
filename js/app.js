@@ -13,12 +13,12 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.0;
 document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xcfd6d4);
+scene.background = new THREE.Color(0x1d1a17);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.55;
@@ -30,12 +30,19 @@ renderer.domElement.addEventListener('mousedown', e => { if (e.button === 1) e.p
 function resetView() { const k = camera.aspect < 0.8 ? 2.0 : camera.aspect < 1.3 ? 1.35 : 1; camera.position.set(-0.42 * k, 0.86 + 0.42 * k, 0.06 + 0.86 * k); controls.target.set(0.0, 0.86, 0.06); controls.update(); }
 resetView();
 
-const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8f8c, 0.7); scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff4e2, 2.2);
-sun.position.set(-1.2, 2.6, 1.6); sun.castShadow = true;
+// Dim, calm evening light: a warm pendant lamp over the table is the key light, cool dusk light comes in
+// through the window on the left, and a low warm fill keeps the shadows soft. The room light slider scales all three.
+const hemi = new THREE.HemisphereLight(0xf2dcc0, 0x3a3027, 0.38); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xbcd0ea, 0.7); // window light
+sun.position.set(-2.6, 2.1, 0.5); sun.castShadow = true; sun.shadow.radius = 6;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -1.4, right: 1.4, top: 1.4, bottom: -1.4, near: 0.5, far: 6 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.004;
+const pendant = new THREE.SpotLight(0xffd3a0, 6, 0, 0.92, 0.85, 2);
+pendant.position.set(0.02, 1.70, 0.05); pendant.target.position.set(0.02, 0.75, 0.0); scene.add(pendant, pendant.target);
+pendant.castShadow = true; pendant.shadow.mapSize.set(1024, 1024); pendant.shadow.radius = 4; pendant.shadow.bias = -0.0005; pendant.shadow.normalBias = 0.004;
+Object.assign(pendant.shadow.camera, { near: 0.2, far: 3 });
+const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff4e0, emissive: 0xffd9a8, emissiveIntensity: 2.2 });
 scene.add(sun);
 
 // ---------- materials (units: meters, Y up, machine front faces +Z) ----------
@@ -58,12 +65,74 @@ const cyl = (r, len, m, axis = 'y', seg = 32, rTop = r) => {
 };
 const grp = (parent, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
 
+// ---------- procedural textures (drawn here, so the page needs no image files) ----------
+const MAXANI = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+function canvasTex(w, h, draw, repeat = [1, 1]) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d', { willReadFrequently: true }), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); t.anisotropy = MAXANI; return t;
+}
+function grain(ctx, w, h, amp) { const img = ctx.getImageData(0, 0, w, h), d = img.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * amp; d[i] += n; d[i + 1] += n; d[i + 2] += n; } ctx.putImageData(img, 0, 0); }
+function woodPlanks(ctx, w, h, { base, dark, planks, seed, joints }) {
+  const R = rng(seed), ph = h / planks; ctx.fillStyle = base; ctx.fillRect(0, 0, w, h);
+  for (let p = 0; p < planks; p++) {
+    const y0 = p * ph, tint = (R() - 0.5) * 0.16;
+    ctx.fillStyle = tint > 0 ? `rgba(255,236,210,${tint})` : `rgba(45,25,10,${-tint})`; ctx.fillRect(0, y0, w, ph);
+    for (let i = 0; i < 70; i++) { // grain lines
+      const y = y0 + R() * ph, a = 1 + R() * 3.5, f = 0.002 + R() * 0.008, s = R() * 10;
+      ctx.strokeStyle = `rgba(${dark},${0.04 + R() * 0.12})`; ctx.lineWidth = 0.5 + R() * 1.8; ctx.beginPath();
+      for (let x = 0; x <= w; x += 8) { const yy = Math.min(y0 + ph - 1, Math.max(y0 + 1, y + Math.sin(x * f + s) * a + Math.sin(x * f * 3.3 + s) * a * 0.35)); if (x) ctx.lineTo(x, yy); else ctx.moveTo(x, yy); }
+      ctx.stroke(); }
+    if (R() < 0.4) { const kx = R() * w, ky = y0 + ph * (0.3 + R() * 0.4); ctx.lineWidth = 1.2; ctx.strokeStyle = `rgba(${dark},.16)`; // knot
+      for (let r = 2; r < 16; r += 2.6) { ctx.beginPath(); ctx.ellipse(kx, ky, r * 2.4, Math.min(r * 0.8, ph * 0.4), 0, 0, Math.PI * 2); ctx.stroke(); } }
+    ctx.fillStyle = `rgba(${dark},.6)`; ctx.fillRect(0, y0, w, 2);
+    if (joints) { let x = R() * w * 0.5; while (x < w) { ctx.fillRect(x, y0, 2, ph); x += w * (0.35 + R() * 0.4); } }
+  }
+  grain(ctx, w, h, 10);
+}
+const TEX = {
+  table: canvasTex(1024, 512, (c, w, h) => woodPlanks(c, w, h, { base: '#a97b4b', dark: '70,40,15', planks: 5, seed: 7 })),
+  wood2: canvasTex(512, 512, (c, w, h) => woodPlanks(c, w, h, { base: '#7a5535', dark: '40,22,8', planks: 4, seed: 11 })),
+  floor: canvasTex(1024, 1024, (c, w, h) => woodPlanks(c, w, h, { base: '#7d5f44', dark: '45,28,14', planks: 12, seed: 3, joints: true }), [3, 3]),
+  plaster: canvasTex(512, 512, (c, w, h) => { const R = rng(5); c.fillStyle = '#c9bca8'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(${R() > 0.5 ? '255,250,240' : '90,75,60'},${0.02 + R() * 0.04})`; c.beginPath(); c.arc(R() * w, R() * h, 6 + R() * 40, 0, Math.PI * 2); c.fill(); }
+    grain(c, w, h, 14); }, [5, 2]),
+  rug: canvasTex(1024, 704, (c, w, h) => { c.fillStyle = '#6a4236'; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#c4a173'; c.lineWidth = 12; c.strokeRect(34, 34, w - 68, h - 68); c.strokeStyle = '#2f3d45'; c.lineWidth = 5; c.strokeRect(62, 62, w - 124, h - 124);
+    c.fillStyle = 'rgba(196,161,115,.28)'; for (let y = 110, r = 0; y < h - 100; y += 56, r++) for (let x = 110 + (r % 2) * 28; x < w - 100; x += 56) { c.beginPath(); c.moveTo(x, y - 13); c.lineTo(x + 13, y); c.lineTo(x, y + 13); c.lineTo(x - 13, y); c.fill(); }
+    for (let y = 0; y < h; y += 3) { c.fillStyle = `rgba(0,0,0,${Math.random() * 0.09})`; c.fillRect(0, y, w, 1); } grain(c, w, h, 18); }),
+  felt: canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); grain(c, w, h, 46); }, [3, 3]),
+  wound: canvasTex(64, 256, (c, w, h) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 2) { c.fillStyle = `rgba(0,0,0,${0.12 + Math.random() * 0.12})`; c.fillRect(0, y, w, 1); } }, [1, 4]),
+};
+M.wood.map = TEX.table; M.wood.color.set(0xffffff); M.wood.roughness = 0.55;
+M.woodDark.map = TEX.wood2; M.woodDark.color.set(0xffffff);
+M.floor.map = TEX.floor; M.floor.color.set(0xffffff); M.floor.roughness = 0.72;
+M.wall.map = TEX.plaster; M.wall.color.set(0xffffff);
+M.tray.map = TEX.felt; M.tray.roughness = 1;
+M.thread.map = TEX.wound; M.threadB.map = TEX.wound; M.steel.roughness = 0.3;
+// molded plastic: a soft clear coat over a satin base
+for (const [k, rough] of [['white', 0.38], ['gray', 0.46]]) { const o = M[k]; M[k] = new THREE.MeshPhysicalMaterial({ color: o.color, roughness: rough, clearcoat: 0.32, clearcoatRoughness: 0.3 }); o.dispose(); }
+
 // ---------- room and sewing table ----------
 const TABLE_Y = 0.75;
 {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(7, 7), M.floor); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(7, 3), M.wall); wall.position.set(0, 1.5, -0.62); wall.receiveShadow = true; scene.add(wall);
-  put(scene, box(7, 0.09, 0.02, M.woodDark), 0, 0.045, -0.61);
+  put(scene, box(3.4, 0.09, 0.02, M.woodDark), 0, 0.045, -0.61);
+  // the rest of the room: side walls, a window at dusk, a rug and the pendant lamp over the table
+  wall.scale.x = 3.4 / 7;
+  for (const [x, ry] of [[-1.7, Math.PI / 2], [1.7, -Math.PI / 2]]) { const sw = new THREE.Mesh(new THREE.PlaneGeometry(3.8, 3), M.wall); sw.rotation.y = ry; sw.position.set(x, 1.5, 1.28); sw.receiveShadow = true; scene.add(sw);
+    const bb = put(scene, box(0.02, 0.09, 3.8, M.woodDark), x + Math.sign(-x) * 0.01, 0.045, 1.28); bb.castShadow = false; }
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.15), new THREE.MeshBasicMaterial({ color: 0x4d5f78 })); win.rotation.y = Math.PI / 2; win.position.set(-1.695, 1.55, 0.25); scene.add(win);
+  for (const [dy, dz, h, d] of [[0.6, 0, 0.05, 1.1], [-0.6, 0, 0.05, 1.1], [0, 0.53, 1.25, 0.05], [0, -0.53, 1.25, 0.05], [0, 0, 1.15, 0.025], [0.02, 0, 0.025, 1.0]])
+    put(scene, box(0.04, h, d, M.woodDark), -1.68, 1.55 + dy, 0.25 + dz);
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.78), new THREE.MeshStandardMaterial({ map: TEX.rug, roughness: 1 })); rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.003, 0.15); rug.receiveShadow = true; scene.add(rug);
+  const lamp = grp(scene, pendant.position.x, pendant.position.y, pendant.position.z), noShadow = m => { m.castShadow = false; m.receiveShadow = false; return m; };
+  const shade = new THREE.CylinderGeometry(0.035, 0.16, 0.15, 48, 1, true);
+  lamp.add(noShadow(new THREE.Mesh(shade, new THREE.MeshStandardMaterial({ color: 0x27342e, roughness: 0.45, metalness: 0.35 }))).translateY(0.06));
+  lamp.add(noShadow(new THREE.Mesh(shade, new THREE.MeshStandardMaterial({ color: 0xf3e6cf, roughness: 0.8, side: THREE.BackSide, emissive: 0xffc98a, emissiveIntensity: 0.35 }))).translateY(0.06));
+  lamp.add(noShadow(new THREE.Mesh(new THREE.SphereGeometry(0.034, 24, 16), bulbMat)).translateY(0.01));
+  lamp.add(noShadow(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.04, 20), M.black)).translateY(0.15));
+  lamp.add(noShadow(new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 1.2, 8), M.black)).translateY(0.77));
   put(scene, rbox(1.9, 0.04, 0.95, 0.008, M.wood), 0, TABLE_Y - 0.02, 0);          // large sewing table top
   put(scene, box(1.74, 0.09, 0.02, M.woodDark), 0, TABLE_Y - 0.085, 0.4);
   put(scene, box(1.74, 0.09, 0.02, M.woodDark), 0, TABLE_Y - 0.085, -0.4);
@@ -201,7 +270,7 @@ const tension = grp(machine, -0.083, 0.247, 0.056); put(tension, cyl(0.016, 0.00
 const reverse = grp(machine, 0.105, 0.15, 0.066); put(reverse, rbox(0.017, 0.024, 0.011, 0.003, M.gray), 0, -0.012, 0.004);
 const lifter = grp(machine, -0.105, 0.17, -0.062); put(lifter, rbox(0.008, 0.008, 0.034, 0.002, M.gray), 0, 0, -0.017); put(lifter, cyl(0.004, 0.012, M.dark, 'x', 16), 0, 0, 0); lifter.rotation.x = 0.55;
 const winder = grp(machine, 0.085, 0.289, 0.015); put(winder, cyl(0.006, 0.004, M.gray), 0, 0.002, 0); put(winder, cyl(0.002, 0.016, M.steel), 0, 0.012, 0);
-const power = grp(machine, 0.167, 0.07, 0.015); put(power, box(0.005, 0.017, 0.01, M.red), 0.001, 0, 0); power.rotation.z = -0.18;
+const power = grp(machine, 0.167, 0.07, 0.015); put(power, box(0.005, 0.017, 0.01, M.red), 0.001, 0, 0); power.rotation.z = 0.18;
 const handle = grp(machine, 0.01, 0.2895, 0.0); for (const x of [-0.06, 0.06]) put(handle, box(0.008, 0.005, 0.034, M.gray), x, 0, 0.017); put(handle, rbox(0.128, 0.006, 0.01, 0.002, M.gray), 0, 0, 0.034);
 const pedal = grp(machine, 0.1, -TABLE_Y, 0.72); put(pedal, rbox(0.14, 0.018, 0.1, 0.006, M.black), 0, 0.009, 0);
 const pedalTop = grp(pedal, 0, 0.02, -0.045); put(pedalTop, rbox(0.13, 0.008, 0.095, 0.003, M.dark), 0, 0.004, 0.0475); pedalTop.rotation.x = -0.22;
@@ -223,7 +292,7 @@ for (const g of Object.values(acc)) g.position.x += TRAY_DX;
 
 // ---------- registry ----------
 const P = {}; const order = [];
-const S = { lifter: false, cover: false, power: false, winder: false, handle: false, stitch: 3, tension: 4, running: false, theta: 0 };
+const S = { lifter: false, cover: false, power: true, winder: false, handle: false, stitch: 3, tension: 4, running: false, theta: 0 };
 function reg(id, def) {
   const p = P[id] = { id, ...def }; order.push(id); p.meshes = [];
   p.obj.traverse(m => { if (m.isMesh && !m.userData.pid) { m.material = m.material.clone(); m.userData.pid = id; p.meshes.push(m); } });
@@ -926,7 +995,8 @@ for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => { f
 const LIGHT = { room: 0.65, lamp: 0.4 };
 try { const v = JSON.parse(localStorage.getItem('m1500-light') || 'null'); if (v) Object.assign(LIGHT, v); } catch (_) {}
 function applyLights() {
-  hemi.intensity = 0.7 * LIGHT.room; sun.intensity = 2.2 * LIGHT.room; scene.environmentIntensity = 0.55 * LIGHT.room;
+  const r = LIGHT.room / 0.65; // 65% is the designed default
+  hemi.intensity = 0.38 * r; sun.intensity = 0.7 * r; pendant.intensity = 6 * r; scene.environmentIntensity = 0.22 * r; bulbMat.emissiveIntensity = 0.4 + 1.8 * Math.min(1.5, r);
   ledLight.intensity = S.power ? 0.008 * LIGHT.lamp : 0; M.led.emissiveIntensity = S.power ? 0.4 + 2.6 * LIGHT.lamp : 0;
   for (const el of document.querySelectorAll('[data-light]')) { const k = el.dataset.light; if (+el.value !== Math.round(LIGHT[k] * 100)) el.value = Math.round(LIGHT[k] * 100); }
   for (const el of document.querySelectorAll('[data-lightval]')) el.textContent = Math.round(LIGHT[el.dataset.lightval] * 100) + '%';
