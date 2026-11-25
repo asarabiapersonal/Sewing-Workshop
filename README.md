@@ -12,8 +12,8 @@ instruction manual.
 
 | | |
 |---|---|
-| ![Guided threading at the take-up lever, with the thread drawn through the guide and tension channels](docs/media/01-threading.png) | ![Sewing a 5/8 in seam on floral quilting cotton, with live machine status and top and underside previews](docs/media/02-sewing.png) |
-| **Threading**: seven guided steps from the manual (p.8–9). The thread is drawn through each guide, the tension channels, the take-up lever and the needle. | **Sewing**: a 5/8 in seam on quilting cotton. The status panel shows the stitch, speed, needle-to-edge distance and how far you are off the chalk line. |
+| ![Guided threading at the take-up lever, with the thread drawn through the guide and tension channels](docs/media/01-threading.png) | ![Sewing a 5/8 in seam on quilting cotton printed with my logo, with live machine status and top and underside previews](docs/media/02-sewing.png) |
+| **Threading**: seven guided steps from the manual (p.8–9). The thread is drawn through each guide, the tension channels, the take-up lever and the needle. | **Sewing**: a 5/8 in seam on quilting cotton printed with my logo, under the warm pendant lamp. The status panel shows the stitch, speed, needle-to-edge distance and how far you are off the chalk line. |
 | ![A wide zigzag wrapping the raw edge of denim](docs/media/03-stitches.png) | ![The finished seam on the cutting mat, graded Excellent](docs/media/04-results.png) |
 | **Stitches**: a wide zigzag edge finish on denim. Every stitch is drawn on the top and on the underside, so tension problems show where they would in real life. | **Results**: each exercise is graded on how much of the line you sewed, how close you stayed, backstitching at both ends, tension and needle choice. |
 | ![Every user part taken off the machine and laid out on the parts tray, with part labels](docs/media/05-parts.png) | ![The workshop on a tablet and a phone, with the menu tucked away](docs/media/06-touch.png) |
