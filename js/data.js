@@ -23,8 +23,8 @@ export const FABRICS = {
   denim: { name: 'Denim', thick: 0.0012, rec: [14, 16], weave: 'twill', weight: 'heavy' },
   canvas: { name: 'Canvas / duck', thick: 0.0014, rec: [16, 18], weave: 'canvas', weight: 'heavy' },
 };
-export const TYPE_DEF = { cotton: ['floral', '#3f7a52'], voile: ['dots', '#d97a95'], flannel: ['plaid', '#c8423b'], jersey: ['stripes', '#26365e'], denim: ['solid', '#2f5d8a'], canvas: ['solid', '#c9b48a'] };
-export const PRINTS = { solid: 'Solid', gingham: 'Gingham', dots: 'Polka dots', stripes: 'Stripes', plaid: 'Plaid', floral: 'Floral' };
+export const TYPE_DEF = { cotton: ['logo', '#2b2d31'], voile: ['dots', '#d97a95'], flannel: ['plaid', '#c8423b'], jersey: ['stripes', '#26365e'], denim: ['solid', '#2f5d8a'], canvas: ['solid', '#c9b48a'] };
+export const PRINTS = { logo: 'My logo', solid: 'Solid', gingham: 'Gingham', dots: 'Polka dots', stripes: 'Stripes', plaid: 'Plaid', floral: 'Floral' };
 export const FCOLORS = ['#c8423b', '#2f5d8a', '#3f7a52', '#e3b23c', '#e9e4d8', '#7a4f8f', '#d97a95', '#c9b48a', '#26365e', '#2b2d31'];
 export const THREADS = [['Red', '#b5343c'], ['Navy', '#26365e'], ['Black', '#1b1b1e'], ['White', '#f4f2ec'], ['Gold', '#c9962b'], ['Green', '#3c7a4a'], ['Pink', '#d9708f']];
 export const NEEDLES = [9, 11, 14, 16, 18];

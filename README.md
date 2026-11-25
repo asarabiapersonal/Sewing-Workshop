@@ -42,8 +42,9 @@ After `npm install`, everything runs offline. To use it on a phone or tablet, op
   of it, and every dial position sews its real shape: three straight stitch lengths, three zigzag widths,
   multi-step zigzag, blind hem, scallop and the 4-step buttonhole.
 - **Fabric**: quilting cotton, voile, flannel, jersey knit, denim and canvas, each with its weave and the
-  needle sizes from the manual's chart (p.21). Six prints (solid, gingham, polka dots, stripes, plaid,
-  floral) in ten colors. The piece drapes off the edges of the machine bed.
+  needle sizes from the manual's chart (p.21). Seven prints in ten colors: my logo (the default, from
+  `assets/logo.png`), solid, gingham, polka dots, stripes, plaid and floral. The piece drapes off the edges
+  of the machine bed.
 - **Mistakes it teaches**:
   - Sewing with the presser foot up makes a thread nest underneath.
   - With no thread or no bobbin, the needle only punches holes.
@@ -76,6 +77,7 @@ stitch spacing, zigzag width and backstitch overlap come out of the simulation.
 - `js/app.js`: the machine model, parts, threading, fabric and stitching, and the interface.
 - `js/data.js`: fabrics, needles, stitch patterns, the machine cycle, exercises and grading. It has no
   Three.js, so the tests import it directly.
+- `assets/logo.png`: the logo print, stored as a transparent mask so it can be tinted to any fabric color.
 
 This is a learning aid, not a replacement for your machine's manual. Settings vary between machines,
 so always check your own.

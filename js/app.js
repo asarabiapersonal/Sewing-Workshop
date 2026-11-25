@@ -402,7 +402,7 @@ Object.assign(S, { liftY: 0, pressure: 0, pedalHeld: false, revHeld: false, leve
   nsize: 14, ntype: 'u2020', needleBroken: false, rate: 18, topColor: '#b5343c', bobColor: '#b5343c', contrast: false, sound: true, fab: null, viewFab: null, samples: [], cutUntil: 0 });
 let handling = 0;
 
-const FO = { type: 'cotton', print: 'floral', color: '#3f7a52', ex: 'straight' };
+const FO = { type: 'cotton', print: 'logo', color: '#2b2d31', ex: 'straight' };
 
 
 S.spec = stitchSpec(S.stitch, 0); S.swingFrom = S.swingTo = S.spec.dx;
@@ -435,9 +435,19 @@ function footRide() {
 }
 
 // ---------- fabric painting ----------
+// The owner's logo: an alpha mask (ink where the logo is black), tinted to the chosen color and tiled.
+const LOGO = new Image(); LOGO.src = new URL('../assets/logo.png', import.meta.url).href;
+function tintedLogo(col, lh) {
+  const w = Math.round(lh * LOGO.naturalWidth / LOGO.naturalHeight), c = document.createElement('canvas'); c.width = w; c.height = Math.round(lh);
+  const x = c.getContext('2d'); x.drawImage(LOGO, 0, 0, w, c.height); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, w, c.height); return c;
+}
 function paintFabric(ctx, w, h, o, f, back) {
   const m = PXMM, col = o.color, R = rng(o.seed), fill = c => { ctx.fillStyle = c; ctx.fillRect(0, 0, w, h); };
   switch (o.print) {
+    case 'logo': { fill('#f4f1e9'); if (!LOGO.complete || !LOGO.naturalWidth) break;
+      const t = tintedLogo(col, 30 * m), sx = 46 * m, sy = 44 * m; let row = 0; // 30 mm tall logos in a staggered repeat
+      for (let y = -sy / 2; y < h + sy; y += sy, row++) for (let x = (row % 2 ? sx / 2 : 0) - sx / 2; x < w + sx; x += sx) ctx.drawImage(t, x - t.width / 2, y - t.height / 2);
+      break; }
     case 'gingham': { fill('#f4f1e9'); const p = 12 * m, b = 6 * m; ctx.globalAlpha = 0.55; ctx.fillStyle = col; for (let x = 0; x < w; x += p) ctx.fillRect(x, 0, b, h); for (let y = 0; y < h; y += p) ctx.fillRect(0, y, w, b); ctx.globalAlpha = 1; break; }
     case 'dots': { fill(col); ctx.fillStyle = '#f6f2e8'; const s = 10 * m; let row = 0; for (let y = s / 2; y < h + s; y += s * 0.866, row++) for (let x = row % 2 ? s / 2 : 0; x < w + s; x += s) { ctx.beginPath(); ctx.arc(x, y, 2.2 * m, 0, TAU); ctx.fill(); } break; }
     case 'stripes': { fill('#f4f1e9'); ctx.fillStyle = col; for (let x = 0; x < w; x += 10 * m) ctx.fillRect(x, 0, 4.5 * m, h); break; }
@@ -461,7 +471,7 @@ function paintFabric(ctx, w, h, o, f, back) {
   const img = ctx.getImageData(0, 0, w, h), d = img.data, amp = f.weave === 'fuzzy' ? 16 : 7;
   for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * amp; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
   ctx.putImageData(img, 0, 0);
-  if (back) { const wash = f.weave === 'twill' ? 0.45 : ['dots', 'floral', 'stripes'].includes(o.print) ? 0.38 : 0.08; ctx.fillStyle = `rgba(245,242,235,${wash})`; ctx.fillRect(0, 0, w, h); }
+  if (back) { const wash = f.weave === 'twill' ? 0.45 : ['dots', 'floral', 'stripes', 'logo'].includes(o.print) ? 0.38 : 0.08; ctx.fillStyle = `rgba(245,242,235,${wash})`; ctx.fillRect(0, 0, w, h); }
   ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, w - 2, h - 2);
 }
 const dot = (ctx, x, y, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); };
@@ -495,7 +505,7 @@ class Fabric {
   inside(lx, lz) { return Math.abs(lx) <= this.W / 2 && Math.abs(lz) <= this.D / 2; }
   cp(lx, lz) { return [(lx / this.W + 0.5) * this.cw, (lz / this.D + 0.5) * this.ch]; }
   drawGuide() {
-    const ctx = this.top.ctx, o = this.o, m = PXMM, lightBase = ['gingham', 'stripes'].includes(o.print) || lum(o.color) > 0.55;
+    const ctx = this.top.ctx, o = this.o, m = PXMM, lightBase = ['gingham', 'stripes', 'logo'].includes(o.print) || lum(o.color) > 0.55;
     const blueish = new THREE.Color(o.color).getHSL({}).h > 0.5 && new THREE.Color(o.color).getHSL({}).h < 0.72;
     const chalk = lightBase ? (blueish ? 'rgba(200,40,90,.85)' : 'rgba(40,80,190,.85)') : 'rgba(255,255,255,.92)';
     const pts = this.guide.map(p => this.cp(p[0], p[1]));

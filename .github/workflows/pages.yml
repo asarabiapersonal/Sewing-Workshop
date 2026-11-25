@@ -31,7 +31,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir -p _site/node_modules/three/examples
-          cp -r index.html styles.css js _site/
+          cp -r index.html styles.css js assets _site/
           cp -r node_modules/three/build _site/node_modules/three/
           cp -r node_modules/three/examples/jsm _site/node_modules/three/examples/
       - uses: actions/configure-pages@v5
