@@ -130,3 +130,32 @@ body.clean #panel { transform:translateX(calc(100% + 24px)); }
   body.ic #info { right:auto; }
   #toast { top:calc(58px + var(--sat)); max-width:92vw; }
 }
+
+/* ---- Start sewing panel: the three steps to get sewing, with a faint shimmer on the next one ---- */
+#quest { position:fixed; top:calc(12px + var(--sat)); left:50%; transform:translateX(-50%); z-index:5; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:9px 12px; box-shadow:0 8px 30px rgba(0,0,0,.22); overflow:hidden; transition:opacity .2s ease; }
+#qfx { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+.qhead { all:unset; box-sizing:border-box; display:flex; width:100%; justify-content:space-between; align-items:center; gap:12px; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; cursor:pointer; position:relative; z-index:1; }
+.qhead span:last-child { letter-spacing:0; }
+.qsteps { display:flex; align-items:center; gap:6px; margin-top:8px; position:relative; z-index:1; }
+.qstep { display:flex; align-items:center; gap:7px; padding:7px 12px 7px 8px; border-radius:10px; background:#fff; white-space:nowrap; transition:box-shadow .3s, border-color .3s, background .3s; }
+.qstep b { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:50%; background:#e7ecea; color:var(--muted); font-size:11px; flex:none; }
+.qstep.done { color:var(--muted); background:#f3f5f4; }
+.qstep.done b { background:var(--accent); color:transparent; position:relative; }
+.qstep.done b::after { content:"✓"; color:#fff; position:absolute; font-size:11px; }
+.qstep.next { border-color:rgba(201,150,43,.6); background:#fffdf8; animation:qglow 2.8s ease-in-out infinite; }
+.qstep.next b { background:#c9962b; color:#fff; }
+@keyframes qglow { 0%, 100% { box-shadow:0 0 0 1px rgba(201,150,43,.18), 0 0 10px rgba(255,200,120,.22); } 50% { box-shadow:0 0 0 1px rgba(201,150,43,.32), 0 0 18px rgba(255,200,120,.38); } }
+.qlink { width:14px; height:1px; background:var(--line); flex:none; }
+.qhint { font-size:11.5px; color:#34424a; margin-top:7px; text-align:center; position:relative; z-index:1; }
+body.qc .qsteps, body.qc .qhint { display:none; }
+body.qc #quest { padding:8px 12px; }
+body.clean #quest { opacity:0; pointer-events:none; }
+#toast { top:calc(112px + var(--sat)); }
+#err { top:calc(112px + var(--sat)); }
+@media (prefers-reduced-motion: reduce) { .qstep.next { animation:none; box-shadow:0 0 0 1px rgba(201,150,43,.3), 0 0 12px rgba(255,200,120,.3); } }
+@media (max-width:1150px) { .qlink { display:none; } .qstep { padding:6px 10px 6px 7px; } }
+@media (max-width:760px) {
+  #quest { top:calc(56px + var(--sat)); left:calc(8px + var(--sal)); right:calc(8px + var(--sar)); transform:none; padding:8px 10px; }
+  .qsteps { justify-content:space-between; gap:5px; } .qstep { padding:6px 8px 6px 6px; gap:5px; font-size:12.5px; flex:1 1 0; justify-content:center; }
+  #toast, #err { top:calc(168px + var(--sat)); }
+}

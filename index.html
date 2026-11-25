@@ -19,6 +19,16 @@
 <div id="labels"></div>
 <button id="bClean" class="fab icon" aria-label="Hide all panels" title="Hide all panels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
 <button id="panelTab" class="fab">☰ Menu</button>
+<section id="quest" aria-label="Start sewing">
+  <canvas id="qfx" aria-hidden="true"></canvas>
+  <button class="qhead" id="qHead" aria-label="Show or hide the start sewing steps"><span>Start sewing</span><span>▾</span></button>
+  <div class="qsteps">
+    <button id="qThread" class="qstep"><b>1</b><span>Auto-thread</span></button><i class="qlink"></i>
+    <button id="qPlace" class="qstep"><b>2</b><span>Place fabric</span></button><i class="qlink"></i>
+    <button id="qFoot" class="qstep"><b>3</b><span>Lower foot</span></button>
+  </div>
+  <div id="qHint" class="qhint" aria-live="polite"></div>
+</section>
 <div id="hud"><button id="hudHead" class="hhead" aria-label="Show or hide machine status">Machine status <span>▾</span></button><div id="hudRows"></div><div id="thumbs" class="thumbs" hidden></div></div>
 <aside id="panel">
   <header><button id="bPanelClose" class="icon" aria-label="Close menu">›</button><h1>Singer M1500 workshop</h1><p>Sew tab: thread the machine, choose a fabric and practice. Parts tab: take the user parts on and off. Left-drag to orbit, middle- or right-drag to pan, scroll to zoom.</p></header>
@@ -34,11 +44,10 @@
     <div id="list"></div>
   </div>
 </aside>
-<section id="info"><div id="iHead"><h3 id="iT">Singer M1500</h3><button id="bInfo" class="icon" aria-label="Collapse info">▾</button></div><div class="ref" id="iR">Built from the M1500 / M1505 instruction manual</div><div id="iP">To start sewing: click <b>Thread instantly</b> (or follow <b>Guided threading</b>), pick a fabric and click <b>Place fabric</b>. Lower the presser foot with F, then hold Space to sew. Click any part on the machine to learn what it does.</div><div id="iB"></div></section>
+<section id="info"><div id="iHead"><h3 id="iT">Singer M1500</h3><button id="bInfo" class="icon" aria-label="Collapse info">▾</button></div><div class="ref" id="iR">Built from the M1500 / M1505 instruction manual</div><div id="iP">To start sewing, follow the <b>Start sewing</b> steps at the top: <b>Auto-thread</b>, <b>Place fabric</b>, then <b>Lower foot</b>. Then hold Space (or <b>Hold to sew</b>). Click any part on the machine to learn what it does.</div><div id="iB"></div></section>
 <div id="sewbar">
   <button id="sbSew" class="primary">Hold to sew <kbd>Space</kbd></button>
   <button id="sbRev">Reverse <kbd>R</kbd></button>
-  <button id="sbFoot">Foot <kbd>F</kbd></button>
   <button id="sbNeedle">Needle <kbd>N</kbd></button>
   <span class="grp x"><button data-key="ArrowLeft" aria-label="Guide left">←</button><button data-key="ArrowUp" aria-label="Slide fabric back">↑</button><button data-key="ArrowDown" aria-label="Slide fabric forward">↓</button><button data-key="ArrowRight" aria-label="Guide right">→</button></span>
   <span class="grp x"><button data-key="KeyQ" aria-label="Pivot left">⟲ <kbd>Q</kbd></button><button data-key="KeyE" aria-label="Pivot right">⟳ <kbd>E</kbd></button></span>

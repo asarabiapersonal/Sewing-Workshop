@@ -917,13 +917,13 @@ function swatches(list, cur, on) { const d = mkEl('div', { class: 'sw' }); for (
   UI.remove = mkEl('button', { onclick: removeWork }, 'Remove the work');
   t.append(
     mkEl('h2', {}, 'Ready to sew'), UI.chk,
-    mkEl('h2', {}, 'Thread'), mkEl('div', { class: 'two' }, mkEl('button', { onclick: startThreading }, 'Guided threading'), mkEl('button', { onclick: threadNow }, 'Thread instantly')),
+    mkEl('h2', {}, 'Thread'), mkEl('button', { onclick: startThreading, style: 'width:100%;margin:6px 0' }, 'Guided threading'),
     swatches(THREADS, S.topColor, c => { S.topColor = c; applyThreadColors(); }),
     mkEl('label', { class: 'ck' }, UI.contrast, ' Contrasting bobbin thread (makes tension problems easy to see)'),
     mkEl('h2', {}, 'Stitch'), fld('Pattern', UI.stitch), fld('Upper tension', tens),
     mkEl('h2', {}, 'Fabric'), fld('Fabric', UI.ftype), fld('Print', UI.print), UI.fsw,
     fld('Needle size', UI.nsize), fld('Needle type', UI.ntype), UI.nhint,
-    fld('Exercise', UI.ex), UI.exhint, mkEl('div', { class: 'two' }, UI.place, UI.remove),
+    fld('Exercise', UI.ex), UI.exhint, mkEl('div', { class: 'two' }, UI.remove, mkEl('span')),
     mkEl('h2', {}, 'Controls'),
     mkEl("div", { class: "keys" }));
   t.lastChild.innerHTML = '<kbd>Space</kbd> hold: foot pedal<br><kbd>R</kbd> hold: reverse<br><kbd>F</kbd> presser foot up / down<br><kbd>N</kbd> needle down / up (handwheel)<br><kbd>←</kbd> <kbd>→</kbd> while sewing: guide the fabric<br>Foot up: arrows slide the fabric, <kbd>Q</kbd> <kbd>E</kbd> pivot (needle down pivots on the needle)<br>Darning plate on: arrows move the fabric freely<br><kbd>V</kbd> sewing view · <kbd>Esc</kbd> stop';
@@ -964,7 +964,6 @@ function hudUpdate() {
 $('sbSew').addEventListener('pointerdown', e => { e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} pedalDown(); });
 for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) { $('sbSew').addEventListener(ev, pedalUp); $('sbRev').addEventListener(ev, () => S.revHeld = false); }
 $('sbRev').addEventListener('pointerdown', e => { e.preventDefault(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {} S.revHeld = true; });
-$('sbFoot').onclick = () => { if (!busy) setLifter(!S.lifter).then(refresh); };
 $('sbNeedle').onclick = needleToggle; $('sbView').onclick = sewingView;
 $('sbSound').onclick = e => { S.sound = !S.sound; e.currentTarget.textContent = S.sound ? 'Sound on' : 'Sound off'; if (S.sound) ensureAudio(); };
 $('sbSpeed').oninput = e => S.rate = +e.target.value;
@@ -1036,6 +1035,53 @@ if (isPhone()) BC.add('pc', 'hc', 'sc');
 mqPhone.addEventListener('change', () => { if (isPhone()) BC.add('pc', 'sc'); syncUIButtons(); });
 syncUIButtons();
 
+
+// ---------- start sewing panel: auto-thread, place fabric, lower foot ----------
+// The next step glows, with faint gold motes: two wisps circle the button and sparks drift up from its edge.
+// They are drawn on a canvas inside the panel only, and skipped when the device asks for reduced motion.
+const QSTEPS = [
+  { el: $('qThread'), done: () => S.level >= 5, label: d => d ? 'Threaded' : 'Auto-thread', hint: 'Thread the upper and bobbin threads in one go.', run: threadNow },
+  { el: $('qPlace'), done: () => !!S.fab, label: d => d ? 'New fabric' : 'Place fabric', hint: 'Lay the practice fabric under the presser foot.', run: placeFabric },
+  { el: $('qFoot'), done: () => !!S.fab && S.liftY < 0.001, label: d => d ? 'Foot lowered' : 'Lower foot', hint: 'Lower the presser foot onto the fabric.',
+    run: () => { if (busy) return; if (!S.lifter && !S.fab) return toast('Place the fabric first, then lower the foot onto it.'); setLifter(!S.lifter).then(refresh); } },
+];
+for (const s of QSTEPS) s.el.onclick = () => s.run();
+$('qHead').onclick = () => { BC.toggle('qc'); $('qHead').lastChild.textContent = BC.contains('qc') ? '▸' : '▾'; };
+if (isPhone()) { BC.add('qc'); $('qHead').lastChild.textContent = '▸'; }
+const Q = { ctx: $('qfx').getContext('2d'), parts: [], next: -1, w: 0, h: 0, dpr: 1, spawn: 0, drawn: false, reduce: matchMedia('(prefers-reduced-motion: reduce)').matches };
+let qSig = '';
+function refreshQuest() {
+  const st = QSTEPS.map(s => s.done()), n = st.indexOf(false), sig = st.join() + n + S.power;
+  if (sig === qSig) return; qSig = sig; Q.next = n;
+  QSTEPS.forEach((s, i) => { s.el.classList.toggle('done', st[i]); s.el.classList.toggle('next', i === n); s.el.lastChild.textContent = s.label(st[i]); });
+  QSTEPS[2].el.title = st[2] ? 'Raise the presser foot' : 'Lower the presser foot';
+  $('qHint').textContent = n >= 0 ? QSTEPS[n].hint : !S.power ? 'Switch the power on (switch on the right side of the machine).'
+    : coarse ? 'Ready. Hold the Sew button to sew.' : 'Ready. Hold Space (or Hold to sew) to sew.';
+}
+function questFx(dt, now) {
+  const el = $('quest'), c = Q.ctx, idle = Q.reduce || Q.next < 0 || BC.contains('qc') || BC.contains('clean') || !S.power && Q.next < 0;
+  if (idle) { if (Q.drawn) { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, c.canvas.width, c.canvas.height); Q.parts.length = 0; Q.drawn = false; } return; }
+  const w = el.clientWidth, h = el.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (w !== Q.w || h !== Q.h || dpr !== Q.dpr) { Q.w = w; Q.h = h; Q.dpr = dpr; c.canvas.width = Math.round(w * dpr); c.canvas.height = Math.round(h * dpr); }
+  const pr = el.getBoundingClientRect(), br = QSTEPS[Q.next].el.getBoundingClientRect();
+  const cx = br.left - pr.left - el.clientLeft + br.width / 2, cy = br.top - pr.top - el.clientTop + br.height / 2, A = br.width / 2 + 3, B = br.height / 2 + 3;
+  // a superellipse hugs the rounded button closely; e < 1 squares it off
+  const edge = (a, grow = 0) => { const co = Math.cos(a), si = Math.sin(a), e = 0.32; return [cx + Math.sign(co) * Math.abs(co) ** e * (A + grow), cy + Math.sign(si) * Math.abs(si) ** e * (B + grow)]; };
+  Q.spawn += dt * 14;
+  while (Q.spawn > 1) { Q.spawn--; const a = Math.random() * Math.PI * 2, [x, y] = edge(a, Math.random() * 2), r = Math.random();
+    Q.parts.push({ x, y, vx: Math.cos(a) * (2 + Math.random() * 4), vy: -6 - Math.random() * 12, life: 1.4 + Math.random() * 1.3, t: 0, size: 0.5 + Math.random() * 1.0, tw: Math.random() * 6.3,
+      col: r < 0.7 ? '214,158,58' : r < 0.9 ? '236,196,120' : '25,150,140' }); }
+  c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h); Q.drawn = true;
+  const FAINT = 0.55;
+  const mote = (x, y, s, col, a) => { const g = c.createRadialGradient(x, y, 0, x, y, s * 4); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(0.35, `rgba(${col},${a * 0.35})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.beginPath(); c.arc(x, y, s * 4, 0, Math.PI * 2); c.fill(); };
+  for (let i = Q.parts.length - 1; i >= 0; i--) { const p = Q.parts[i]; p.t += dt; if (p.t >= p.life) { Q.parts.splice(i, 1); continue; }
+    p.x += (p.vx + Math.sin(p.t * 2.2 + p.tw) * 3) * dt; p.y += p.vy * dt; p.vx *= 0.98;
+    const a = Math.sin(Math.PI * p.t / p.life) * (0.65 + 0.35 * Math.sin(now / 140 + p.tw)) * FAINT;
+    mote(p.x, p.y, p.size, p.col, a); }
+  for (const off of [0, Math.PI]) for (let k = 0; k < 16; k++) { // two wisps with short trails
+    const a = now / 1000 * 2.2 + off - k * 0.045, [x, y] = edge(a, 1); mote(x, y, 1.1 * (1 - k / 22), '214,158,58', (1 - k / 16) * 0.5 * FAINT); }
+}
+
 // ---------- loop ----------
 const timer = new THREE.Timer(); const tmp = new THREE.Vector3();
 let lastTheta = 0, hudT = 0;
@@ -1057,7 +1103,8 @@ function frame(now) { timer.update(now); const dt = Math.min(timer.getDelta(), 0
   updateThread(now);
   if (marker.visible) { const st = TSTEPS[GT.i]; if (st.at === 'takeup') marker.position.set(-0.091, takeUp.position.y, 0.077); else if (st.at === 'needle') marker.position.set(nb.position.x, nb.position.y + 0.093, 0.016); else marker.position.set(...st.at); marker.scale.setScalar(1 + 0.25 * Math.sin(now / 160)); }
   if (audio) { const sp = S.pressure * S.rate; audio.o.frequency.value = 55 + sp * 7; audio.o2.frequency.value = sp / TAU * 2 + 1; audio.g.gain.value = S.sound ? Math.min(0.045, S.pressure * 0.05) : 0; }
-  if (now - hudT > 150) { hudT = now; hudUpdate(); refreshSew(); }
+  if (now - hudT > 150) { hudT = now; hudUpdate(); refreshSew(); refreshQuest(); }
+  questFx(dt, now);
   controls.update(); renderer.render(scene, camera);
   if (showLabels) for (const l of LABELS) { tmp.copy(l.v); machine.localToWorld(tmp).project(camera); l.el.style.left = (tmp.x + 1) / 2 * innerWidth + 'px'; l.el.style.top = (1 - tmp.y) / 2 * innerHeight + 'px'; l.el.style.visibility = tmp.z < 1 ? 'visible' : 'hidden'; }
   requestAnimationFrame(frame); }
